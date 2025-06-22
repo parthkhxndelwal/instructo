@@ -81,6 +81,28 @@ export async function GET(request) {
       ],
     })
 
+    // Parse subject to extract trainee and project information
+    const enrichedEmailHistory = emailHistory.map(email => {
+      let trainee = null
+      let project = null
+      
+      // Parse subject format: "Progress Report - [Trainee Name] - [Project Name]"
+      if (email.subject && email.subject.includes('Progress Report - ')) {
+        const parts = email.subject.replace('Progress Report - ', '').split(' - ')
+        if (parts.length >= 2) {
+          trainee = { name: parts[0] }
+          project = { name: parts.slice(1).join(' - ') } // Join remaining parts in case project name has dashes
+        }
+      }
+      
+      return {
+        ...email.toJSON(),
+        trainee,
+        project,
+        recipients: email.recipientEmail ? [email.recipientEmail] : []
+      }
+    })
+
     // Get email statistics
     const stats = await EmailLog.findAll({
       where: { userId: user.id },
@@ -125,7 +147,7 @@ export async function GET(request) {
     return NextResponse.json({
       success: true,
       data: {
-        emailHistory,
+        emailHistory: enrichedEmailHistory,
         pagination: {
           currentPage: page,
           totalPages: Math.ceil(count / limit),

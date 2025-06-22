@@ -1,11 +1,45 @@
 import { NextResponse } from "next/server"
 import { ProgressEntry, Assignment, Project, Trainee, File } from "../../../../models"
 import { schemas } from "../../../../middleware/validation"
-import { Op } from "sequelize"
 import { saveUploadedFile, deleteUploadedFile } from "../../../../utils/nextFileUpload"
 
-// DELETE /api/progress/[id]
-export async function DELETE(request, { params }) {
+// Helper function to authenticate user
+async function authenticateUser(request) {
+  try {
+    const authHeader = request.headers.get("authorization")
+    const token = authHeader && authHeader.split(" ")[1]
+
+    if (!token) {
+      return {
+        error: { success: false, message: "Access token required" },
+        status: 401,
+      }
+    }
+
+    const jwt = require("jsonwebtoken")
+    const { User } = require("../../../../models")
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+    const user = await User.findByPk(decoded.userId)
+
+    if (!user || !user.isActive) {
+      return {
+        error: { success: false, message: "Invalid or inactive user" },
+        status: 401,
+      }
+    }
+
+    return { user }
+  } catch (error) {
+    return {
+      error: { success: false, message: "Invalid or expired token" },
+      status: 403,
+    }
+  }
+}
+
+// GET /api/progress/[id] - Get a specific progress entry
+export async function GET(request, { params }) {
   try {
     // Authenticate user
     const authResult = await authenticateUser(request)
@@ -16,17 +50,6 @@ export async function DELETE(request, { params }) {
 
     const { id } = params
 
-    if (!id) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Progress entry ID is required",
-        },
-        { status: 400 },
-      )
-    }
-
-    // Find the progress entry and verify ownership
     const progressEntry = await ProgressEntry.findOne({
       where: { id },
       include: [
@@ -38,14 +61,19 @@ export async function DELETE(request, { params }) {
             {
               model: Project,
               as: "project",
-              attributes: ["id", "name"],
+              attributes: ["id", "name", "description"],
             },
             {
               model: Trainee,
               as: "trainee",
-              attributes: ["id", "name"],
+              attributes: ["id", "name", "email", "batchNumber"],
             },
           ],
+        },
+        {
+          model: File,
+          as: "files",
+          attributes: ["id", "originalName", "fileName", "fileSize", "mimeType", "uploadDate"],
         },
       ],
     })
@@ -56,43 +84,27 @@ export async function DELETE(request, { params }) {
           success: false,
           message: "Progress entry not found",
         },
-        { status: 404 },
+        { status: 404 }
       )
-    }    // Delete associated files first (if any)
-    const files = await File.findAll({
-      where: { progressEntryId: id },
-    })
-    
-    // Delete files from filesystem
-    for (const file of files) {
-      await deleteUploadedFile(file.filePath)
     }
-    
-    // Delete file records from database
-    await File.destroy({
-      where: { progressEntryId: id },
-    })
-
-    // Delete the progress entry
-    await progressEntry.destroy()
 
     return NextResponse.json({
       success: true,
-      message: "Progress entry deleted successfully",
+      data: progressEntry,
     })
   } catch (error) {
-    console.error("Delete progress entry error:", error)
+    console.error("Get progress entry error:", error)
     return NextResponse.json(
       {
         success: false,
         message: "Internal server error",
       },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }
 
-// PUT /api/progress/[id]
+// PUT /api/progress/[id] - Update a specific progress entry
 export async function PUT(request, { params }) {
   try {
     // Authenticate user
@@ -110,23 +122,22 @@ export async function PUT(request, { params }) {
           success: false,
           message: "Progress entry ID is required",
         },
-        { status: 400 },
+        { status: 400 }
       )
-    }
-
-    // Check if the request is multipart/form-data or JSON
+    }    // Check if the request is multipart/form-data or JSON
     const contentType = request.headers.get("content-type") || ""
     let body
+    let formData = null
 
     if (contentType.includes("multipart/form-data")) {
       // Handle FormData
-      const formData = await request.formData()
+      formData = await request.formData()
       body = {}
       
       // Convert FormData to object
       for (const [key, value] of formData.entries()) {
         if (key === "files") {
-          // Handle file uploads if needed
+          // Handle file uploads separately
           continue
         }
         
@@ -145,35 +156,6 @@ export async function PUT(request, { params }) {
       body = await request.json()
     }
 
-    // Validate request body
-    const { error } = schemas.progressEntry.validate(body)
-    if (error) {
-      console.error("Progress entry validation error:", error.details)
-      console.error("Received body:", body)
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Validation error",
-          errors: error.details.map((detail) => detail.message),
-        },
-        { status: 400 },
-      )
-    }
-
-    const {
-      assignmentId,
-      title,
-      description,
-      startDate,
-      endDate,
-      milestonesAchieved,
-      currentStatus,
-      nextSteps,
-      blockers,
-      completionPercentage,
-      hoursWorked,
-    } = body
-
     // Find the progress entry and verify ownership
     const progressEntry = await ProgressEntry.findOne({
       where: { id },
@@ -192,9 +174,24 @@ export async function PUT(request, { params }) {
           success: false,
           message: "Progress entry not found",
         },
-        { status: 404 },
+        { status: 404 }
       )
     }
+
+    // Extract fields from body
+    const {
+      assignmentId,
+      title,
+      description,
+      startDate,
+      endDate,
+      milestonesAchieved,
+      currentStatus,
+      nextSteps,
+      blockers,
+      completionPercentage,
+      hoursWorked,
+    } = body
 
     // If assignmentId is being changed, verify the new assignment exists and belongs to user
     if (assignmentId && assignmentId !== progressEntry.assignmentId) {
@@ -208,12 +205,10 @@ export async function PUT(request, { params }) {
             success: false,
             message: "New assignment not found",
           },
-          { status: 404 },
+          { status: 404 }
         )
       }
-    }
-
-    // Update progress entry
+    }    // Update progress entry
     await progressEntry.update({
       assignmentId: assignmentId || progressEntry.assignmentId,
       title: title || progressEntry.title,
@@ -228,29 +223,15 @@ export async function PUT(request, { params }) {
       hoursWorked: hoursWorked !== undefined ? Number(hoursWorked) : progressEntry.hoursWorked,
     })
 
-    // Update assignment status if progress is completed
-    const assignment = await Assignment.findByPk(progressEntry.assignmentId)
-    const numericCompletionPercentage = Number(completionPercentage || progressEntry.completionPercentage)
-    
-    if (currentStatus === "Completed" && numericCompletionPercentage === 100) {
-      await assignment.update({
-        status: "Completed",
-        actualCompletionDate: new Date(),
-      })    } else if (currentStatus === "In Progress" && assignment.status === "Not Started") {
-      await assignment.update({
-        status: "In Progress",
-      })
-    }
-
     // Handle file uploads if present
     const uploadedFiles = []
-    if (contentType.includes("multipart/form-data")) {
-      const formData = await request.formData()
+    if (contentType.includes("multipart/form-data") && formData) {
       const files = formData.getAll("files")
       
       if (files && files.length > 0) {
         for (const file of files) {
-          if (file instanceof File && file.size > 0) {
+          // Check if the file is valid (has all required properties)
+          if (file && typeof file === 'object' && file.size > 0 && file.name && file.type) {
             try {
               // Save file to filesystem
               const fileMetadata = await saveUploadedFile(file, user.id, progressEntry.id)
@@ -261,6 +242,7 @@ export async function PUT(request, { params }) {
                 fileName: fileMetadata.fileName,
                 filePath: fileMetadata.relativePath,
                 fileSize: fileMetadata.fileSize,
+                mimeType: fileMetadata.fileType,
                 fileType: fileMetadata.fileType,
                 progressEntryId: progressEntry.id,
               })
@@ -297,10 +279,12 @@ export async function PUT(request, { params }) {
         {
           model: File,
           as: "files",
-          attributes: ["id", "originalName", "fileName", "fileSize", "fileType"],
+          attributes: ["id", "originalName", "fileName", "fileSize", "mimeType", "uploadDate"],
         },
       ],
-    })    return NextResponse.json(
+    })
+
+    return NextResponse.json(
       {
         success: true,
         message: "Progress entry updated successfully",
@@ -309,7 +293,7 @@ export async function PUT(request, { params }) {
           uploadedFiles: uploadedFiles.length,
         },
       },
-      { status: 200 },
+      { status: 200 }
     )
   } catch (error) {
     console.error("Update progress entry error:", error)
@@ -318,42 +302,86 @@ export async function PUT(request, { params }) {
         success: false,
         message: "Internal server error",
       },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }
 
-// Helper function to authenticate user
-async function authenticateUser(request) {
+// DELETE /api/progress/[id] - Delete a specific progress entry
+export async function DELETE(request, { params }) {
   try {
-    const authHeader = request.headers.get("authorization")
-    const token = authHeader && authHeader.split(" ")[1]
+    // Authenticate user
+    const authResult = await authenticateUser(request)
+    if (authResult.error) {
+      return NextResponse.json(authResult.error, { status: authResult.status })
+    }
+    const user = authResult.user
 
-    if (!token) {
-      return {
-        error: { success: false, message: "Access token required" },
-        status: 401,
+    const { id } = params
+
+    if (!id) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Progress entry ID is required",
+        },
+        { status: 400 }
+      )
+    }
+
+    // Find the progress entry and verify ownership
+    const progressEntry = await ProgressEntry.findOne({
+      where: { id },
+      include: [
+        {
+          model: Assignment,
+          as: "assignment",
+          where: { userId: user.id },
+        },
+        {
+          model: File,
+          as: "files",
+        },
+      ],
+    })
+
+    if (!progressEntry) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Progress entry not found",
+        },
+        { status: 404 }
+      )
+    }
+
+    // Delete associated files from filesystem
+    if (progressEntry.files && progressEntry.files.length > 0) {
+      for (const file of progressEntry.files) {
+        try {
+          await deleteUploadedFile(file.filePath)
+        } catch (fileError) {
+          console.error("File deletion error:", fileError)
+          // Continue with deletion even if file removal fails
+        }
       }
     }
 
-    const jwt = require("jsonwebtoken")
-    const { User } = require("../../../../models")
+    // Delete the progress entry (this will also delete related files from DB due to cascade)
+    await progressEntry.destroy()
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
-    const user = await User.findByPk(decoded.userId)
-
-    if (!user || !user.isActive) {
-      return {
-        error: { success: false, message: "Invalid or inactive user" },
-        status: 401,
-      }
-    }
-
-    return { user }
+    return NextResponse.json({
+      success: true,
+      message: "Progress entry deleted successfully",
+    })
   } catch (error) {
-    return {
-      error: { success: false, message: "Invalid or expired token" },
-      status: 403,
-    }
+    console.error("Delete progress entry error:", error)
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Internal server error",
+      },
+      { status: 500 }
+    )
   }
 }

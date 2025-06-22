@@ -30,7 +30,6 @@ import type { ColumnDef } from "@tanstack/react-table"
 const emailSchema = z.object({
   traineeId: z.string().min(1, "Please select a trainee"),
   projectId: z.string().min(1, "Please select a project"),
-  adminIds: z.array(z.string()).min(1, "Please select at least one admin"),
   subject: z.string().min(1, "Subject is required"),
   customMessage: z.string().optional(),
   includeAllProgress: z.boolean(),
@@ -195,12 +194,24 @@ export default function ReportsPage() {
   }
 
   const onSubmit = async (data: EmailForm) => {
+    // Validate admin selection manually since it's not part of the form
+    if (selectedAdmins.length === 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please select at least one admin",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsSubmitting(true)
     try {
-      await reportsAPI.sendEmail({
+      const payload = {
         ...data,
         adminIds: selectedAdmins,
-      })
+      }
+      
+      await reportsAPI.sendEmail(payload)
 
       toast({
         title: "Email sent successfully",
@@ -212,6 +223,7 @@ export default function ReportsPage() {
       reset()
       fetchData()
     } catch (error: any) {
+      console.error("Send email error:", error)
       toast({
         title: "Failed to send email",
         description: error.response?.data?.message || "An error occurred while sending the email",
@@ -253,7 +265,7 @@ export default function ReportsPage() {
         <div>
           <div className="font-medium">{row.getValue("subject")}</div>
           <div className="text-sm text-gray-500">
-            {row.original.trainee.name} - {row.original.project.name}
+            {row.original.trainee?.name || "Unknown Trainee"} - {row.original.project?.name || "Unknown Project"}
           </div>
         </div>
       ),
@@ -263,6 +275,9 @@ export default function ReportsPage() {
       header: "Recipients",
       cell: ({ row }) => {
         const recipients = row.getValue("recipients") as string[]
+        if (!recipients || recipients.length === 0) {
+          return <div className="text-sm text-gray-500">No recipients</div>
+        }
         return (
           <div className="text-sm">
             {recipients.slice(0, 2).join(", ")}
@@ -303,7 +318,14 @@ export default function ReportsPage() {
 
   const openCreateDialog = () => {
     setSelectedAdmins(admins.filter((admin) => admin.isDefault).map((admin) => admin.id))
-    reset()
+    reset({
+      traineeId: "",
+      projectId: "",
+      subject: "",
+      customMessage: "",
+      includeAllProgress: true,
+      includeFiles: true,
+    })
     setIsDialogOpen(true)
   }
 
@@ -355,7 +377,7 @@ export default function ReportsPage() {
                 Send Report
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-3xl">
+            <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Send Progress Report</DialogTitle>
                 <DialogDescription>
@@ -621,7 +643,7 @@ export default function ReportsPage() {
 
         {/* Email Preview Dialog */}
         <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-          <DialogContent className="sm:max-w-4xl">
+          <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Email Preview</DialogTitle>
               <DialogDescription>Review the email content before sending to admins.</DialogDescription>

@@ -71,16 +71,23 @@ interface ProgressEntry {
   }
   files: Array<{
     id: string
+    originalName: string
     fileName: string
-    fileType: string
     fileSize: number
+    mimeType: string
     uploadDate: string
   }>
   linkedProgress: Array<{
     id: string
-    title: string
-    trainee: {
-      name: string
+    linkType: string
+    linkedProgressEntry: {
+      id: string
+      title: string
+      assignment: {
+        trainee: {
+          name: string
+        }
+      }
     }
   }>
   createdAt: string
@@ -205,9 +212,11 @@ export default function ProgressPage() {
         console.log(key, value)
       }
 
-      // Add files
+      // Add files with proper naming
+      console.log("Uploaded files to add:", uploadedFiles.length)
       uploadedFiles.forEach((file, index) => {
-        formData.append(`files`, file)
+        console.log(`Adding file ${index}:`, file.name, file.size, file.type)
+        formData.append('files', file, file.name)
       })
 
       if (editingProgress) {
@@ -254,6 +263,7 @@ export default function ProgressPage() {
 
   const handleEdit = (progress: ProgressEntry) => {
     setEditingProgress(progress)
+    setUploadedFiles([]) // Clear any previously selected files
     setValue("assignmentId", progress.assignment.id)
     setValue("title", progress.title)
     setValue("description", progress.description)
@@ -264,7 +274,7 @@ export default function ProgressPage() {
     setValue("nextSteps", progress.nextSteps || "")
     setValue("blockers", progress.blockers || "")
     setValue("hoursWorked", progress.hoursWorked)
-  setValue("completionPercentage", progress.completionPercentage)
+    setValue("completionPercentage", progress.completionPercentage)
     setIsDialogOpen(true)
   }
 
@@ -374,14 +384,33 @@ export default function ProgressPage() {
         const files = row.original.files || []
         const linkedProgress = row.original.linkedProgress || []
         return (
-          <div className="flex items-center space-x-1">
-            <FileText className="w-4 h-4 text-gray-400" />
-            <span className="text-sm">{files.length}</span>
-            {linkedProgress.length > 0 && (
-              <>
-                <Link className="w-4 h-4 text-blue-500 ml-2" />
-                <span className="text-sm text-blue-600">{linkedProgress.length}</span>
-              </>
+          <div className="space-y-1">
+            <div className="flex items-center space-x-1">
+              <FileText className="w-4 h-4 text-gray-400" />
+              <span className="text-sm font-medium">{files.length} file{files.length !== 1 ? 's' : ''}</span>
+              {linkedProgress.length > 0 && (
+                <>
+                  <Link className="w-4 h-4 text-blue-500 ml-2" />
+                  <span className="text-sm text-blue-600">{linkedProgress.length} linked</span>
+                </>
+              )}
+            </div>
+            {files.length > 0 && (
+              <div className="space-y-1">
+                {files.slice(0, 2).map((file) => (
+                  <button
+                    key={file.id}
+                    onClick={() => downloadFile(file.id, file.originalName)}
+                    className="block text-xs text-blue-600 hover:text-blue-800 hover:underline truncate max-w-[200px]"
+                    title={file.originalName}
+                  >
+                    {file.originalName}
+                  </button>
+                ))}
+                {files.length > 2 && (
+                  <span className="text-xs text-gray-500">+{files.length - 2} more</span>
+                )}
+              </div>
             )}
           </div>
         )
@@ -483,7 +512,7 @@ export default function ProgressPage() {
                 Add Progress Entry
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-3xl">
+            <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingProgress ? "Edit Progress Entry" : "Create Progress Entry"}</DialogTitle>
                 <DialogDescription>
@@ -639,6 +668,7 @@ export default function ProgressPage() {
                   <div className="space-y-2 col-span-2">
                     <Label>File Uploads</Label>
                     <FileUpload
+                      key={editingProgress ? `edit-${editingProgress.id}` : 'create'}
                       onFilesChange={setUploadedFiles}
                       maxFiles={10}
                       acceptedTypes={[".pdf", ".doc", ".docx", ".jpg", ".png", ".zip"]}

@@ -8,15 +8,15 @@ const File = sequelize.define("File", {
     primaryKey: true,
   },
   originalName: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(255),
     allowNull: false,
   },
   fileName: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(255),
     allowNull: false,
   },
   filePath: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(512),
     allowNull: false,
   },
   fileSize: {
@@ -24,12 +24,12 @@ const File = sequelize.define("File", {
     allowNull: false,
   },
   mimeType: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(100),
     allowNull: false,
   },
   fileType: {
-    type: DataTypes.ENUM("Progress Report", "Attendance", "Other"),
-    defaultValue: "Other",
+    type: DataTypes.STRING(100),
+    allowNull: false,
   },
   uploadDate: {
     type: DataTypes.DATE,

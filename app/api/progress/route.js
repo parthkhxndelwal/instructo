@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { ProgressEntry, Assignment, Project, Trainee, File } from "../../../models"
+import { ProgressEntry, Assignment, Project, Trainee, File, ProgressLink } from "../../../models"
 import { schemas } from "../../../middleware/validation"
 import { Op } from "sequelize"
 import { saveUploadedFile } from "../../../utils/nextFileUpload"
@@ -68,7 +68,32 @@ export async function GET(request) {
         {
           model: File,
           as: "files",
-          attributes: ["id", "originalName", "fileName", "fileSize", "fileType"],
+          attributes: ["id", "originalName", "fileName", "fileSize", "mimeType", "uploadDate"],
+        },
+        {
+          model: ProgressLink,
+          as: "linkedProgress",
+          include: [
+            {
+              model: ProgressEntry,
+              as: "linkedProgressEntry",
+              attributes: ["id", "title"],
+              include: [
+                {
+                  model: Assignment,
+                  as: "assignment",
+                  attributes: ["id"],
+                  include: [
+                    {
+                      model: Trainee,
+                      as: "trainee",
+                      attributes: ["id", "name"],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
         },
       ],
       limit,
@@ -231,6 +256,7 @@ export async function POST(request) {
                 fileName: fileMetadata.fileName,
                 filePath: fileMetadata.relativePath,
                 fileSize: fileMetadata.fileSize,
+                mimeType: fileMetadata.fileType,
                 fileType: fileMetadata.fileType,
                 progressEntryId: progressEntry.id,
               })
@@ -267,7 +293,32 @@ export async function POST(request) {
         {
           model: File,
           as: "files",
-          attributes: ["id", "originalName", "fileName", "fileSize", "fileType"],
+          attributes: ["id", "originalName", "fileName", "fileSize", "mimeType", "uploadDate"],
+        },
+        {
+          model: ProgressLink,
+          as: "linkedProgress",
+          include: [
+            {
+              model: ProgressEntry,
+              as: "linkedProgressEntry",
+              attributes: ["id", "title"],
+              include: [
+                {
+                  model: Assignment,
+                  as: "assignment",
+                  attributes: ["id"],
+                  include: [
+                    {
+                      model: Trainee,
+                      as: "trainee",
+                      attributes: ["id", "name"],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
         },
       ],
     })

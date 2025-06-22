@@ -272,7 +272,7 @@ export default function ProjectsPage() {
                 Create Project
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-2xl">
+            <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingProject ? "Edit Project" : "Create New Project"}</DialogTitle>
                 <DialogDescription>

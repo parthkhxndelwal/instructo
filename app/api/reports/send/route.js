@@ -13,21 +13,26 @@ export async function POST(request) {
     const user = authResult.user
 
     const body = await request.json()
-    const { assignmentId, adminIds, customMessage, includeAllProgress } = body
+    const { traineeId, projectId, adminIds, subject, customMessage, includeAllProgress, includeFiles } = body
 
-    if (!assignmentId || !adminIds || adminIds.length === 0) {
+    if (!traineeId || !projectId || !adminIds || adminIds.length === 0) {
       return NextResponse.json(
         {
           success: false,
-          message: "Assignment ID and admin IDs are required",
+          message: "Trainee ID, Project ID, and admin IDs are required",
         },
         { status: 400 },
       )
     }
 
-    // Get assignment with related data
+    // Get assignment based on trainee and project
     const assignment = await Assignment.findOne({
-      where: { id: assignmentId, userId: user.id, isActive: true },
+      where: { 
+        userId: user.id, 
+        isActive: true,
+        projectId: projectId,
+        traineeId: traineeId
+      },
       include: [
         {
           model: Project,
@@ -40,14 +45,18 @@ export async function POST(request) {
         {
           model: ProgressEntry,
           as: "progressEntries",
+          required: false, // Use LEFT JOIN to include assignments even without progress entries
           include: [
             {
               model: File,
               as: "files",
+              required: false, // Use LEFT JOIN to include progress entries even without files
             },
           ],
-          order: [["createdAt", "DESC"]],
         },
+      ],
+      order: [
+        [{ model: ProgressEntry, as: "progressEntries" }, "createdAt", "DESC"]
       ],
     })
 
