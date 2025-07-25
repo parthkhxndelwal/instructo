@@ -1,6 +1,6 @@
 # Instructor Training Management Tool - Backend API
 
-A comprehensive backend API for managing instructor training programs, built with Next.js, Sequelize, and MySQL.
+A robust system built for educators and administrators to efficiently manage instructor-led training programs, monitor trainee progress, and streamline project-based learning. 
 
 ## Features
 
