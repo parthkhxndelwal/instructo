@@ -128,6 +128,7 @@ export default function ProgressPage() {
   const [linkingProgress, setLinkingProgress] = useState<ProgressEntry | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
+  const [fileUploadKey, setFileUploadKey] = useState(0)
 
   const {
     register,
@@ -161,6 +162,7 @@ export default function ProgressPage() {
     try {
       const [progressRes, assignmentsRes] = await Promise.all([progressAPI.getAll(), assignmentAPI.getAll()])
 
+      console.log("Fetched progress entries:", progressRes.data.data.progressEntries)
       setProgressEntries(progressRes.data.data.progressEntries)
       setAssignments(assignmentsRes.data.data.assignments)
     } catch (error: any) {
@@ -220,13 +222,15 @@ export default function ProgressPage() {
       })
 
       if (editingProgress) {
-        await progressAPI.update(editingProgress.id, formData)
+        const result = await progressAPI.update(editingProgress.id, formData)
+        console.log("Update result:", result.data)
         toast({
           title: "Progress updated",
           description: "Progress entry has been updated successfully.",
         })
       } else {
-        await progressAPI.create(formData)
+        const result = await progressAPI.create(formData)
+        console.log("Create result:", result.data)
         toast({
           title: "Progress created",
           description: "New progress entry has been created successfully.",
@@ -236,6 +240,7 @@ export default function ProgressPage() {
       setIsDialogOpen(false)
       setEditingProgress(null)
       setUploadedFiles([])
+      setFileUploadKey(prev => prev + 1) // Force FileUpload component to remount
       reset({
         assignmentId: "",
         title: "",
@@ -264,6 +269,7 @@ export default function ProgressPage() {
   const handleEdit = (progress: ProgressEntry) => {
     setEditingProgress(progress)
     setUploadedFiles([]) // Clear any previously selected files
+    setFileUploadKey(prev => prev + 1) // Force FileUpload component to remount
     setValue("assignmentId", progress.assignment.id)
     setValue("title", progress.title)
     setValue("description", progress.description)
@@ -668,7 +674,7 @@ export default function ProgressPage() {
                   <div className="space-y-2 col-span-2">
                     <Label>File Uploads</Label>
                     <FileUpload
-                      key={editingProgress ? `edit-${editingProgress.id}` : 'create'}
+                      key={editingProgress ? `edit-${editingProgress.id}` : `create-${fileUploadKey}`}
                       onFilesChange={setUploadedFiles}
                       maxFiles={10}
                       acceptedTypes={[".pdf", ".doc", ".docx", ".jpg", ".png", ".zip"]}

@@ -243,10 +243,20 @@ export async function POST(request) {
     if (contentType.includes("multipart/form-data") && formData) {
       const files = formData.getAll("files")
       
+      console.log("Files received in create route:", files.length)
+      console.log("Files details:", files.map(f => ({ 
+        name: f?.name, 
+        size: f?.size, 
+        type: f?.type, 
+        constructor: f?.constructor.name 
+      })))
+      
       if (files && files.length > 0) {
         for (const file of files) {
-          if (file instanceof File && file.size > 0) {
+          // Check if the file is valid (has all required properties)
+          if (file && typeof file === 'object' && file.size > 0 && file.name && file.type) {
             try {
+              console.log("Processing file:", file.name, file.size, file.type)
               // Save file to filesystem
               const fileMetadata = await saveUploadedFile(file, user.id, progressEntry.id)
               
@@ -262,10 +272,19 @@ export async function POST(request) {
               })
               
               uploadedFiles.push(dbFile)
+              console.log("File uploaded successfully:", dbFile.originalName)
             } catch (fileError) {
               console.error("File upload error:", fileError)
               // Continue with other files even if one fails
             }
+          } else {
+            console.log("Invalid file skipped:", {
+              hasFile: !!file,
+              type: typeof file,
+              size: file?.size,
+              name: file?.name,
+              fileType: file?.type
+            })
           }
         }
       }
@@ -321,6 +340,13 @@ export async function POST(request) {
           ],
         },
       ],
+    })
+
+    console.log("Final progress entry with files:", {
+      id: progressEntryWithRelations.id,
+      title: progressEntryWithRelations.title,
+      filesCount: progressEntryWithRelations.files?.length || 0,
+      uploadedFilesCount: uploadedFiles.length
     })
 
     return NextResponse.json(

@@ -327,7 +327,7 @@ export default function ProjectsPage() {
                     <Label htmlFor="description">Description</Label>
                     <Textarea
                       id="description"
-                      placeholder="A comprehensive canteen management system for NHPC..."
+                      placeholder="A comprehensive canteen management system for Senpaihost..."
                       {...register("description")}
                       rows={3}
                     />

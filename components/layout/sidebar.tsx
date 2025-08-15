@@ -96,7 +96,7 @@ export function Sidebar() {
                 <GraduationCap className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-sm font-semibold text-gray-900">NHPC Training</h1>
+                <h1 className="text-sm font-semibold text-gray-900">Senpaihost Training</h1>
                 <p className="text-xs text-gray-500">Management Tool</p>
               </div>
             </div>
@@ -164,7 +164,7 @@ export function Sidebar() {
         {sidebarOpen && (
           <div className="p-4 border-t border-gray-200">
             <div className="text-center">
-              <p className="text-xs text-gray-500">NHPC Training Management</p>
+              <p className="text-xs text-gray-500">Senpaihost Training Management</p>
               <p className="text-xs text-gray-400">v1.0.0</p>
             </div>
           </div>

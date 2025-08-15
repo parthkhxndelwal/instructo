@@ -57,9 +57,23 @@ export default function LoginPage() {
       })
       router.push("/dashboard")
     } catch (error: any) {
+      console.error("Login error:", error)
+      
+      // Handle different types of errors
+      let errorMessage = "An error occurred during login"
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message
+      } else if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+        // Handle validation errors from backend
+        errorMessage = error.response.data.errors.join(", ")
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+
       toast({
         title: "Login failed",
-        description: error.response?.data?.message || "An error occurred during login",
+        description: errorMessage,
         variant: "destructive",
       })
     } finally {
@@ -151,7 +165,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-gray-500">
-          <p>© 2024 NHPC. All rights reserved.</p>
+          <p>© 2024 Senpaihost. All rights reserved.</p>
         </div>
       </div>
     </div>

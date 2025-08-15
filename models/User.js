@@ -40,9 +40,10 @@ const User = sequelize.define(
         len: [6, 255],
       },
     },
-    nhpcDepartment: {
+    SenpaihostDepartment: {
       type: DataTypes.STRING,
       allowNull: true,
+      field: 'senpaihostdepartment', // Map to lowercase column in database
     },
     employeeId: {
       type: DataTypes.STRING,

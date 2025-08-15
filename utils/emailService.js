@@ -175,6 +175,89 @@ class EmailService {
       throw new Error(`Connection test failed: ${error.message}${suggestion ? ` Suggestion: ${suggestion}` : ''}`)
     }
   }
+
+  static async sendTestEmailToAdmin(userId, adminEmail, adminName) {
+    try {
+      const transporter = await this.createTransporter(userId)
+      const emailConfig = await EmailConfiguration.findOne({ where: { userId } })
+
+      if (!emailConfig) {
+        throw new Error("Email configuration not found")
+      }
+
+      // Verify the connection first
+      await transporter.verify()
+
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">Test Email - Admin Connectivity Check</h2>
+          <p>Hello ${adminName || 'Admin'},</p>
+          <p>This is a test email to verify that the email connectivity is working properly for your admin account.</p>
+          <p><strong>Admin Email:</strong> ${adminEmail}</p>
+          <p><strong>Test Date:</strong> ${new Date().toLocaleString()}</p>
+          <p>If you received this email, it means the email configuration is working correctly.</p>
+          <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
+          <p style="color: #6b7280; font-size: 14px;">
+            This is an automated test email from the Instructor Training Management System.
+          </p>
+        </div>
+      `
+
+      const emailText = `
+        Test Email - Admin Connectivity Check
+        
+        Hello ${adminName || 'Admin'},
+        
+        This is a test email to verify that the email connectivity is working properly for your admin account.
+        
+        Admin Email: ${adminEmail}
+        Test Date: ${new Date().toLocaleString()}
+        
+        If you received this email, it means the email configuration is working correctly.
+        
+        This is an automated test email from the Instructor Training Management System.
+      `
+
+      // Send test email to the admin
+      await transporter.sendMail({
+        from: emailConfig.emailAddress,
+        to: adminEmail,
+        subject: "Test Email - Admin Connectivity Check",
+        html: emailHtml,
+        text: emailText,
+      })
+
+      // Log the email
+      await EmailLog.create({
+        userId,
+        recipientEmail: adminEmail,
+        recipientName: adminName,
+        subject: "Test Email - Admin Connectivity Check",
+        body: emailText,
+        status: "Sent",
+        sentAt: new Date(),
+      })
+
+      return { 
+        success: true, 
+        message: `Test email sent successfully to ${adminEmail}` 
+      }
+    } catch (error) {
+      // Log the failed email attempt
+      await EmailLog.create({
+        userId,
+        recipientEmail: adminEmail,
+        recipientName: adminName,
+        subject: "Test Email - Admin Connectivity Check",
+        body: `Failed to send test email: ${error.message}`,
+        status: "Failed",
+        errorMessage: error.message,
+        sentAt: new Date(),
+      })
+
+      throw new Error(`Failed to send test email: ${error.message}`)
+    }
+  }
 }
 
 module.exports = EmailService

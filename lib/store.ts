@@ -5,7 +5,7 @@ interface User {
   id: string
   name: string
   email: string
-  nhpcDepartment?: string
+  SenpaihostDepartment?: string
   employeeId?: string
 }
 

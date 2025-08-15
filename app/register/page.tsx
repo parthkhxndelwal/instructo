@@ -16,12 +16,17 @@ import { useToast } from "@/components/ui/use-toast"
 
 const registerSchema = z
   .object({
-    name: z.string().min(2, "Name must be at least 2 characters"),
+    name: z.string().min(2, "Name must be at least 2 characters").max(100, "Name must be less than 100 characters"),
     email: z.string().email("Please enter a valid email address"),
-    phone: z.string().min(10, "Phone number must be at least 10 digits").optional().or(z.literal("")),
-    nhpcDepartment: z.string().optional(),
+    phone: z.string()
+      .regex(/^\+?[\d\s\-\(\)]{10,15}$/, "Please enter a valid phone number (10-15 digits)")
+      .optional()
+      .or(z.literal("")),
+    SenpaihostDepartment: z.string().optional(),
     employeeId: z.string().optional(),
-    password: z.string().min(6, "Password must be at least 6 characters"),
+    password: z.string()
+      .min(6, "Password must be at least 6 characters")
+      .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Password must contain at least one uppercase letter, one lowercase letter, and one number"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -58,9 +63,23 @@ export default function RegisterPage() {
       })
       router.push("/login")
     } catch (error: any) {
+      console.error("Registration error:", error)
+      
+      // Handle different types of errors
+      let errorMessage = "An error occurred during registration"
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message
+      } else if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+        // Handle validation errors from backend
+        errorMessage = error.response.data.errors.join(", ")
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+
       toast({
         title: "Registration failed",
-        description: error.response?.data?.message || "An error occurred during registration",
+        description: errorMessage,
         variant: "destructive",
       })
     } finally {
@@ -125,12 +144,12 @@ export default function RegisterPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="nhpcDepartment">NHPC Department</Label>
+                <Label htmlFor="SenpaihostDepartment">Senpaihost Department</Label>
                 <Input
-                  id="nhpcDepartment"
+                  id="SenpaihostDepartment"
                   type="text"
                   placeholder="e.g., IT Department, HR Department"
-                  {...register("nhpcDepartment")}
+                  {...register("SenpaihostDepartment")}
                 />
               </div>
 
@@ -218,7 +237,7 @@ export default function RegisterPage() {
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-gray-500">
-          <p>© 2024 NHPC. All rights reserved.</p>
+          <p>© 2024 Senpaihost. All rights reserved.</p>
         </div>
       </div>
     </div>

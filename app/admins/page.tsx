@@ -150,15 +150,16 @@ export default function AdminsPage() {
 
   const testEmailConnection = async (admin: Admin) => {
     try {
-      // This would be a test email endpoint
+      await adminAPI.testEmail(admin.id)
       toast({
         title: "Test email sent",
-        description: `Test email sent to ${admin.email}`,
+        description: `Test email sent successfully to ${admin.email}`,
       })
     } catch (error: any) {
+      console.error("Test email error:", error)
       toast({
         title: "Email test failed",
-        description: "Failed to send test email",
+        description: error.response?.data?.message || "Failed to send test email",
         variant: "destructive",
       })
     }
@@ -300,7 +301,7 @@ export default function AdminsPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="sharma@nhpc.com"
+                    placeholder="sharma@Senpaihost.com"
                     {...register("email")}
                     className={errors.email ? "border-red-500" : ""}
                   />
@@ -422,7 +423,7 @@ export default function AdminsPage() {
               <div>
                 <h4 className="font-medium text-gray-900 mb-2">Best Practices</h4>
                 <ul className="text-sm text-gray-600 space-y-1">
-                  <li>• Use official NHPC email addresses</li>
+                  <li>• Use official Senpaihost email addresses</li>
                   <li>• Keep admin information up to date</li>
                   <li>• Set department heads as default admins</li>
                   <li>• Regularly test email connectivity</li>

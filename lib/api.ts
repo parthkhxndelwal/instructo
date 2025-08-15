@@ -33,6 +33,7 @@ export const adminAPI = {
   create: (data: any) => api.post("/admins", data),
   update: (id: string, data: any) => api.put(`/admins/${id}`, data),
   delete: (id: string) => api.delete(`/admins/${id}`),
+  testEmail: (id: string) => api.post(`/admins/${id}/test-email`),
 }
 
 // Trainee API

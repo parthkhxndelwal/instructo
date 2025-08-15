@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "Instructor Training Management Tool",
-  description: "A comprehensive tool for managing instructor training programs at NHPC",
+  description: "A comprehensive tool for managing instructor training programs at Senpaihost",
     generator: 'v0.dev'
 }
 

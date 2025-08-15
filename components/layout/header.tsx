@@ -76,7 +76,7 @@ export function Header() {
                 </Avatar>
                 <div className="hidden md:block text-left">
                   <p className="text-sm font-medium text-gray-900">{user?.name || "User"}</p>
-                  <p className="text-xs text-gray-500">{user?.nhpcDepartment || "Instructor"}</p>
+                  <p className="text-xs text-gray-500">{user?.SenpaihostDepartment || "Instructor"}</p>
                 </div>
               </Button>
             </DropdownMenuTrigger>

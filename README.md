@@ -92,7 +92,7 @@ Register a new instructor account.
   "email": "john@example.com",
   "phone": "1234567890",
   "password": "password123",
-  "nhpcDepartment": "IT Department",
+  "SenpaihostDepartment": "IT Department",
   "employeeId": "EMP001"
 }
 \`\`\`
@@ -164,7 +164,7 @@ Authorization: Bearer <jwt_token>
       {
         "id": "uuid",
         "name": "Mr. Sharma",
-        "email": "sharma@nhpc.com",
+        "email": "sharma@Senpaihost.com",
         "department": "HR Department",
         "isDefault": true,
         "createdAt": "2024-01-01T00:00:00.000Z"
@@ -187,7 +187,7 @@ Create a new admin contact.
 \`\`\`json
 {
   "name": "Mr. Sharma",
-  "email": "sharma@nhpc.com",
+  "email": "sharma@Senpaihost.com",
   "department": "HR Department",
   "phone": "9876543210",
   "isDefault": true
@@ -237,7 +237,7 @@ Create a new project.
 \`\`\`json
 {
   "name": "Aahaar - Canteen Management System",
-  "description": "A comprehensive canteen management system for NHPC",
+  "description": "A comprehensive canteen management system for Senpaihost",
   "objectives": "Develop a web-based system for canteen operations",
   "duration": 30,
   "requiredSkills": "Java, Spring Boot, MySQL, HTML, CSS, JavaScript",
@@ -342,11 +342,11 @@ Save or update email configuration.
 **Request Body:**
 \`\`\`json
 {
-  "emailAddress": "instructor@nhpc.com",
+  "emailAddress": "instructor@Senpaihost.com",
   "smtpHost": "smtp.gmail.com",
   "smtpPort": 587,
   "smtpSecure": false,
-  "smtpUsername": "instructor@nhpc.com",
+  "smtpUsername": "instructor@Senpaihost.com",
   "smtpPassword": "app_password"
 }
 \`\`\`
@@ -378,7 +378,7 @@ Send progress report to admins.
     "emailResults": [
       {
         "adminId": "admin_uuid",
-        "adminEmail": "admin@nhpc.com",
+        "adminEmail": "admin@Senpaihost.com",
         "status": "sent",
         "messageId": "email_message_id"
       }
@@ -427,7 +427,7 @@ Get dashboard statistics and overview.
 - `email` (String, Unique, Required)
 - `phone` (String, Optional)
 - `password` (String, Hashed, Required)
-- `nhpcDepartment` (String, Optional)
+- `SenpaihostDepartment` (String, Optional)
 - `employeeId` (String, Unique, Optional)
 - `isEmailVerified` (Boolean, Default: false)
 - `isActive` (Boolean, Default: true)

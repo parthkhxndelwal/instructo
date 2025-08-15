@@ -3,6 +3,7 @@ import { User } from "../../../../models"
 import { schemas } from "../../../../middleware/validation"
 import { v4 as uuidv4 } from "uuid"
 import initializeDatabase from "../../../../lib/init-db"
+import { Op } from "sequelize"
 
 export async function POST(request) {
   try {
@@ -24,18 +25,39 @@ export async function POST(request) {
       )
     }
 
-    const { name, email, phone, password, nhpcDepartment, employeeId } = body
+    const { name, email, phone, password, SenpaihostDepartment, employeeId } = body
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ where: { email } })
+    // Check if user already exists (email or phone)
+    const whereConditions = [{ email }]
+    if (phone && phone.trim() !== '') {
+      whereConditions.push({ phone })
+    }
+    
+    const existingUser = await User.findOne({ 
+      where: { 
+        [Op.or]: whereConditions
+      } 
+    })
+    
     if (existingUser) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "User with this email already exists",
-        },
-        { status: 409 },
-      )
+      if (existingUser.email === email) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "An account with this email address already exists",
+          },
+          { status: 409 },
+        )
+      }
+      if (existingUser.phone === phone) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "An account with this phone number already exists",
+          },
+          { status: 409 },
+        )
+      }
     }
 
     // Check if employee ID already exists (if provided)
@@ -58,7 +80,7 @@ export async function POST(request) {
       email,
       phone,
       password,
-      nhpcDepartment,
+      SenpaihostDepartment,
       employeeId,
       emailVerificationToken: uuidv4(),
     })
