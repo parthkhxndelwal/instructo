@@ -15,7 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { emailConfigAPI } from "@/lib/api"
 import { useAppStore } from "@/lib/store"
 import { useToast } from "@/components/ui/use-toast"
-import { Mail, TestTube, CheckCircle, AlertTriangle, Eye, EyeOff } from "lucide-react"
+import { Mail, TestTube, CheckCircle, AlertTriangle, Eye, EyeOff, ExternalLink } from "lucide-react"
 
 const emailConfigSchema = z.object({
   emailAddress: z.string().email("Please enter a valid email address"),
@@ -278,9 +278,38 @@ export default function SettingsPage() {
                         </Button>
                       </div>
                       {errors.smtpPassword && <p className="text-sm text-red-600">{errors.smtpPassword.message}</p>}
-                      <p className="text-sm text-gray-600">
-                        For Gmail, use an App Password instead of your regular password.
-                      </p>
+                      <div className="space-y-2">
+                        <p className="text-sm text-gray-600">
+                          For Gmail, use an App Password instead of your regular password.
+                        </p>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="text-blue-600 border-blue-200 hover:bg-blue-50 h-8"
+                            onClick={() => window.open(process.env.NEXT_PUBLIC_GOOGLE_APP_PASSWORDS_URL || 'https://myaccount.google.com/apppasswords', '_blank')}
+                          >
+                            <ExternalLink className="w-3 h-3 mr-1" />
+                            Create Gmail App Password
+                          </Button>
+                          <span className="text-xs text-gray-500">Opens in new tab</span>
+                        </div>
+                        <Alert className="border-blue-200 bg-blue-50">
+                          <AlertTriangle className="h-4 w-4 text-blue-600" />
+                          <AlertDescription className="text-xs text-blue-700">
+                            <strong>Steps to create App Password:</strong>
+                            <ol className="mt-1 ml-4 list-decimal space-y-1">
+                              <li>Click the button above to open Google App Passwords</li>
+                              <li>Sign in to your Google account if prompted</li>
+                              <li>Select "Mail" as the app</li>
+                              <li>Choose your device type</li>
+                              <li>Copy the 16-character password generated</li>
+                              <li>Paste it in the SMTP Password field above</li>
+                            </ol>
+                          </AlertDescription>
+                        </Alert>
+                      </div>
                     </div>
 
                     <div className="flex items-center space-x-2">
